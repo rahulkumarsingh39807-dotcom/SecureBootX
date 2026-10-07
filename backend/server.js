@@ -72,6 +72,10 @@ const usersRouter =
 
 const vulnerabilitiesRouter = require("./routes/vulnerabilities");
 
+const securityEventsRouter = require("./routes/security-events");
+
+const dashboardRouter = require("./routes/dashboard");
+
 app.use(
   "/api/devices",
   devicesRouter
@@ -96,6 +100,17 @@ app.use(
   "/api/vulnerabilities",
   vulnerabilitiesRouter
 );
+
+app.use(
+  "/api/security-events",
+  securityEventsRouter
+);
+
+app.use(
+  "/api/dashboard",
+  dashboardRouter
+);
+
 /* =========================
    404
 ========================= */

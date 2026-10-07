@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Monitor,
   ShieldAlert,
@@ -6,7 +8,137 @@ import {
   Activity,
 } from "lucide-react";
 
+interface DashboardData {
+  devices: {
+    total: number;
+    secure: number;
+    warning: number;
+    atRisk: number;
+  };
+  threats: {
+    total: number;
+    active: number;
+    critical: number;
+  };
+  alerts: {
+    total: number;
+    open: number;
+    critical: number;
+  };
+  vulnerabilities: {
+    total: number;
+    open: number;
+    critical: number;
+  };
+  securityEvents: {
+    total: number;
+    high: number;
+  };
+}
+
+interface AlertData {
+  id: number;
+  title: string;
+  severity: string;
+  device_id: string;
+  status: string;
+  created_at: string;
+}
+
+interface EventData {
+  id: number;
+  event_type: string;
+  description: string;
+  device_id: string;
+  severity: string;
+  created_at: string;
+}
+
 function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const [summaryResponse, alertsResponse, eventsResponse] =
+          await Promise.all([
+            axios.get(
+              "http://localhost:5000/api/dashboard/summary"
+            ),
+            axios.get(
+              "http://localhost:5000/api/alerts"
+            ),
+            axios.get(
+              "http://localhost:5000/api/security-events"
+            ),
+          ]);
+
+        setData(summaryResponse.data);
+        setAlerts(alertsResponse.data.slice(0, 4));
+        setEvents(eventsResponse.data.slice(0, 4));
+      } catch (error) {
+        console.error(
+          "Failed to load dashboard data:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="page-content">
+        <div className="page-heading">
+          <div>
+            <h1>Security Overview</h1>
+            <p>Loading security data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="page-content">
+        <div className="page-heading">
+          <div>
+            <h1>Security Overview</h1>
+            <p>
+              Unable to load dashboard data. Make sure the backend
+              is running.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const deviceTotal = data.devices.total || 1;
+
+  const securePercentage = Math.round(
+    (data.devices.secure / deviceTotal) * 100
+  );
+
+  const warningPercentage = Math.round(
+    (data.devices.warning / deviceTotal) * 100
+  );
+
+  const atRiskPercentage = Math.round(
+    (data.devices.atRisk / deviceTotal) * 100
+  );
+
+  const securityScore = Math.round(
+    (data.devices.secure / deviceTotal) * 100
+  );
+
   return (
     <div className="page-content">
 
@@ -28,7 +160,13 @@ function Dashboard() {
             SYSTEM SECURITY STATUS
           </span>
 
-          <h2>Good</h2>
+          <h2>
+            {securityScore >= 80
+              ? "Good"
+              : securityScore >= 60
+              ? "Warning"
+              : "Critical"}
+          </h2>
 
           <p>
             Your environment is being actively monitored.
@@ -38,13 +176,13 @@ function Dashboard() {
         <div className="security-score">
 
           <div className="score-circle">
-            <span>87</span>
+            <span>{securityScore}</span>
             <small>/100</small>
           </div>
 
           <div>
             <strong>Security Score</strong>
-            <p>+4.2% this week</p>
+            <p>Based on current device security</p>
           </div>
 
         </div>
@@ -56,32 +194,32 @@ function Dashboard() {
 
         <StatCard
           title="Total Devices"
-          value="128"
-          change="+8.2%"
+          value={String(data.devices.total)}
+          change={`${data.devices.secure} secure`}
           icon={<Monitor size={22} />}
           type="blue"
         />
 
         <StatCard
           title="Active Threats"
-          value="7"
-          change="-12.5%"
+          value={String(data.threats.active)}
+          change={`${data.threats.total} total threats`}
           icon={<ShieldAlert size={22} />}
           type="red"
         />
 
         <StatCard
           title="Critical Alerts"
-          value="12"
-          change="+3.1%"
+          value={String(data.alerts.critical)}
+          change={`${data.alerts.open} open alerts`}
           icon={<AlertTriangle size={22} />}
           type="orange"
         />
 
         <StatCard
           title="Vulnerabilities"
-          value="24"
-          change="-5.4%"
+          value={String(data.vulnerabilities.open)}
+          change={`${data.vulnerabilities.total} total`}
           icon={<Bug size={22} />}
           type="purple"
         />
@@ -98,13 +236,10 @@ function Dashboard() {
 
             <div>
               <h3>Threat Activity</h3>
-              <p>Security events over the last 7 days</p>
+              <p>
+                Current threat severity overview
+              </p>
             </div>
-
-            <select>
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-            </select>
 
           </div>
 
@@ -112,13 +247,41 @@ function Dashboard() {
 
             <div className="chart-bars">
 
-              <ChartBar height="45%" day="Mon" />
-              <ChartBar height="70%" day="Tue" />
-              <ChartBar height="55%" day="Wed" />
-              <ChartBar height="85%" day="Thu" />
-              <ChartBar height="65%" day="Fri" />
-              <ChartBar height="40%" day="Sat" />
-              <ChartBar height="30%" day="Sun" />
+              <ChartBar
+                height={
+                  data.threats.total > 0
+                    ? "85%"
+                    : "10%"
+                }
+                day="Threats"
+              />
+
+              <ChartBar
+                height={
+                  data.alerts.total > 0
+                    ? "70%"
+                    : "10%"
+                }
+                day="Alerts"
+              />
+
+              <ChartBar
+                height={
+                  data.vulnerabilities.total > 0
+                    ? "60%"
+                    : "10%"
+                }
+                day="Vulns"
+              />
+
+              <ChartBar
+                height={
+                  data.securityEvents.total > 0
+                    ? "90%"
+                    : "10%"
+                }
+                day="Events"
+              />
 
             </div>
 
@@ -140,33 +303,15 @@ function Dashboard() {
 
           </div>
 
-          <AlertItem
-            level="critical"
-            title="Unauthorized login detected"
-            device="DEV-021"
-            time="2 min ago"
-          />
-
-          <AlertItem
-            level="high"
-            title="Malware detected"
-            device="DEV-045"
-            time="18 min ago"
-          />
-
-          <AlertItem
-            level="medium"
-            title="Outdated software detected"
-            device="DEV-012"
-            time="42 min ago"
-          />
-
-          <AlertItem
-            level="low"
-            title="New device connected"
-            device="DEV-078"
-            time="1 hr ago"
-          />
+          {alerts.map((alert) => (
+            <AlertItem
+              key={alert.id}
+              level={alert.severity.toLowerCase()}
+              title={alert.title}
+              device={alert.device_id}
+              time={formatTime(alert.created_at)}
+            />
+          ))}
 
         </div>
 
@@ -190,22 +335,22 @@ function Dashboard() {
 
           <StatusRow
             name="Secure"
-            count="104"
-            percentage="81%"
+            count={String(data.devices.secure)}
+            percentage={`${securePercentage}%`}
             type="secure"
           />
 
           <StatusRow
             name="Warning"
-            count="18"
-            percentage="14%"
+            count={String(data.devices.warning)}
+            percentage={`${warningPercentage}%`}
             type="warning"
           />
 
           <StatusRow
-            name="Critical"
-            count="6"
-            percentage="5%"
+            name="At Risk"
+            count={String(data.devices.atRisk)}
+            percentage={`${atRiskPercentage}%`}
             type="critical"
           />
 
@@ -226,25 +371,13 @@ function Dashboard() {
 
           </div>
 
-          <Event
-            title="Malware scan completed"
-            time="10:42 AM"
-          />
-
-          <Event
-            title="Firewall configuration updated"
-            time="10:31 AM"
-          />
-
-          <Event
-            title="New device registered"
-            time="10:18 AM"
-          />
-
-          <Event
-            title="Failed login attempt"
-            time="09:54 AM"
-          />
+          {events.map((event) => (
+            <Event
+              key={event.id}
+              title={event.event_type}
+              time={formatTime(event.created_at)}
+            />
+          ))}
 
         </div>
 
@@ -252,6 +385,17 @@ function Dashboard() {
 
     </div>
   );
+}
+
+
+/* =========================
+   Helper Functions
+========================= */
+
+function formatTime(date: string) {
+  const eventDate = new Date(date);
+
+  return eventDate.toLocaleString();
 }
 
 
@@ -286,7 +430,7 @@ function StatCard({
         <strong>{value}</strong>
 
         <small>
-          {change} from last week
+          {change}
         </small>
 
       </div>
