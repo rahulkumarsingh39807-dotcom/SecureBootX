@@ -70,6 +70,7 @@ const alertsRouter =
 const usersRouter =
   require("./routes/users");
 
+const vulnerabilitiesRouter = require("./routes/vulnerabilities");
 
 app.use(
   "/api/devices",
@@ -91,7 +92,10 @@ app.use(
   usersRouter
 );
 
-
+app.use(
+  "/api/vulnerabilities",
+  vulnerabilitiesRouter
+);
 /* =========================
    404
 ========================= */

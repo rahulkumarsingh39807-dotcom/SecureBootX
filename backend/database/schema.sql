@@ -50,3 +50,15 @@ CREATE TABLE IF NOT EXISTS security_events (
     severity TEXT DEFAULT 'Low',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS vulnerabilities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vulnerability_id TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    description TEXT,
+    device_id TEXT,
+    status TEXT DEFAULT 'Open',
+    cvss_score REAL DEFAULT 0,
+    discovered_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
