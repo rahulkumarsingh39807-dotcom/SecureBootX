@@ -17,14 +17,13 @@ import Settings from "../pages/Settings";
 import DeviceDetails from "../pages/DeviceDetails";
 
 import AppLayout from "../layouts/AppLayout";
+import ProtectedRoute from "./ProtectedRoute";
 
 function AppRoutes() {
-
   return (
     <Routes>
 
       {/* Default */}
-
       <Route
         path="/"
         element={
@@ -36,72 +35,71 @@ function AppRoutes() {
       />
 
       {/* Login */}
-
       <Route
         path="/login"
         element={<Login />}
       />
 
-      {/* Application */}
+      {/* Protected Application */}
+      <Route element={<ProtectedRoute />}>
 
-      <Route
-        element={<AppLayout />}
-      >
+        <Route element={<AppLayout />}>
 
-        <Route
-          path="/dashboard"
-          element={<Dashboard />}
-        />
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
 
-        <Route
-          path="/devices"
-          element={<Devices />}
-        />
+          <Route
+            path="/devices"
+            element={<Devices />}
+          />
 
-        <Route
-  path="/devices/:id"
-  element={<DeviceDetails />}
-/>
+          <Route
+            path="/devices/:id"
+            element={<DeviceDetails />}
+          />
 
-        <Route
-          path="/threats"
-          element={<Threats />}
-        />
+          <Route
+            path="/threats"
+            element={<Threats />}
+          />
 
-        <Route
-          path="/alerts"
-          element={<Alerts />}
-        />
+          <Route
+            path="/alerts"
+            element={<Alerts />}
+          />
 
-        <Route
-          path="/vulnerabilities"
-          element={<Vulnerabilities />}
-        />
+          <Route
+            path="/vulnerabilities"
+            element={<Vulnerabilities />}
+          />
 
-        <Route
-          path="/security-events"
-          element={<SecurityEvents />}
-        />
+          <Route
+            path="/security-events"
+            element={<SecurityEvents />}
+          />
 
-        <Route
-          path="/users"
-          element={<Users />}
-        />
+          <Route
+            path="/users"
+            element={<Users />}
+          />
 
-        <Route
-          path="/reports"
-          element={<Reports />}
-        />
+          <Route
+            path="/reports"
+            element={<Reports />}
+          />
 
-        <Route
-          path="/settings"
-          element={<Settings />}
-        />
+          <Route
+            path="/settings"
+            element={<Settings />}
+          />
+
+        </Route>
 
       </Route>
 
       {/* Unknown URL */}
-
       <Route
         path="*"
         element={
@@ -115,8 +113,5 @@ function AppRoutes() {
     </Routes>
   );
 }
-
-
-
 
 export default AppRoutes;

@@ -1,26 +1,40 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   ShieldCheck,
   Monitor,
-  AlertTriangle,
-  Bug,
+  ShieldAlert,
   Activity,
   Bell,
   Search,
   LayoutDashboard,
-  ShieldAlert,
   FileWarning,
   Settings,
   Users,
   FileText,
   Menu,
+  LogOut,
 } from "lucide-react";
-
-import { NavLink } from "react-router-dom";
 
 import "../App.css";
 
 function AppLayout() {
+  const navigate = useNavigate();
+
+  const storedUser =
+    localStorage.getItem("securebootx_user") ||
+    sessionStorage.getItem("securebootx_user");
+
+  const user = storedUser
+    ? JSON.parse(storedUser)
+    : null;
+
+  const handleLogout = () => {
+    localStorage.removeItem("securebootx_user");
+    sessionStorage.removeItem("securebootx_user");
+
+    navigate("/login", { replace: true });
+  };
+
   return (
     <div className="dashboard">
 
@@ -102,16 +116,30 @@ function AppLayout() {
 
         </nav>
 
+        {/* User Profile + Logout */}
         <div className="sidebar-bottom">
 
           <div className="profile-avatar">
-            A
+            {user?.name?.charAt(0).toUpperCase() || "A"}
           </div>
 
-          <div>
-            <strong>Admin User</strong>
-            <span>Security Admin</span>
+          <div className="profile-info">
+            <strong>
+              {user?.name || "Admin User"}
+            </strong>
+
+            <span>
+              {user?.role || "Security Admin"}
+            </span>
           </div>
+
+          <button
+            className="logout-button"
+            onClick={handleLogout}
+            title="Logout"
+          >
+            <LogOut size={19} />
+          </button>
 
         </div>
 
@@ -155,7 +183,7 @@ function AppLayout() {
             </button>
 
             <div className="user-avatar">
-              A
+              {user?.name?.charAt(0).toUpperCase() || "A"}
             </div>
 
           </div>
@@ -172,7 +200,6 @@ function AppLayout() {
   );
 }
 
-
 function SidebarLink({
   to,
   icon,
@@ -182,7 +209,6 @@ function SidebarLink({
   icon: React.ReactNode;
   label: string;
 }) {
-
   return (
     <NavLink
       to={to}

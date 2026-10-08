@@ -27,7 +27,7 @@ select {
 
 .sidebar {
   width: 250px;
-  min-height: 100vh;
+  height: 100vh;
   background: #0b1120;
   border-right: 1px solid #1e293b;
   padding: 24px 15px;
@@ -37,6 +37,7 @@ select {
   left: 0;
   top: 0;
   bottom: 0;
+  overflow: hidden;
 }
 
 .brand {
@@ -44,6 +45,7 @@ select {
   align-items: center;
   gap: 11px;
   padding: 0 10px 28px;
+  flex-shrink: 0;
 }
 
 .brand-icon {
@@ -66,8 +68,33 @@ select {
   font-size: 10px;
 }
 
+/* Sidebar Navigation */
+
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 3px;
+}
+
+/* Sidebar scrollbar */
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
 
 .nav-title {
@@ -101,12 +128,16 @@ select {
   color: #60a5fa;
 }
 
+/* Sidebar Bottom */
+
 .sidebar-bottom {
   border-top: 1px solid #1e293b;
   padding: 18px 8px 0;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+  margin-top: 10px;
 }
 
 .sidebar-bottom strong,
@@ -128,12 +159,49 @@ select {
 .user-avatar {
   width: 34px;
   height: 34px;
+  min-width: 34px;
   border-radius: 50%;
   background: #1d4ed8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+}
+
+/* Profile Information */
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-info strong,
+.profile-info span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Logout Button */
+
+.logout-button {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s ease;
+  flex-shrink: 0;
+}
+
+.logout-button:hover {
+  background: #172554;
+  color: #60a5fa;
 }
 
 /* Main */
@@ -190,6 +258,10 @@ select {
   border: none;
   outline: none;
   color: white;
+}
+
+.search-box input::placeholder {
+  color: #475569;
 }
 
 .icon-button {
@@ -1485,7 +1557,6 @@ select {
 }
 
 @media (max-width: 800px) {
-
   .device-overview-grid {
     grid-template-columns: 1fr;
   }
