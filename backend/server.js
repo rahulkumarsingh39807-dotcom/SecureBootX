@@ -76,6 +76,8 @@ const securityEventsRouter = require("./routes/security-events");
 
 const dashboardRouter = require("./routes/dashboard");
 
+const authRouter = require("./routes/auth");
+
 app.use(
   "/api/devices",
   devicesRouter
@@ -109,6 +111,11 @@ app.use(
 app.use(
   "/api/dashboard",
   dashboardRouter
+);
+
+app.use(
+  "/api/auth",
+  authRouter
 );
 
 /* =========================

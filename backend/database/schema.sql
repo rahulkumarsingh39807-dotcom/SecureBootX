@@ -62,3 +62,13 @@ CREATE TABLE IF NOT EXISTS vulnerabilities (
     cvss_score REAL DEFAULT 0,
     discovered_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS auth_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT DEFAULT 'User',
+    status TEXT DEFAULT 'Active',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
