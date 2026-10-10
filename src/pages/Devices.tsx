@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   Search,
   RefreshCw,
@@ -44,7 +44,7 @@ export default function Devices() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get<Device[]>(API_URL);
+      const response = await api.get<Device[]>(API_URL);
 
       setDevices(response.data);
     } catch (err) {

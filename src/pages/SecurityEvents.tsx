@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   AlertTriangle,
   CheckCircle,
@@ -29,8 +29,8 @@ function SecurityEvents() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get(
-        "http://localhost:5000/api/security-events"
+      const response = await api.get<SecurityEvent[]>(
+        "/security-events"
       );
 
       setEvents(response.data);

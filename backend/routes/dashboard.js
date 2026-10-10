@@ -1,7 +1,9 @@
+const authenticateToken = require("../middleware/auth");
 const express = require("express");
 const db = require("../database/db");
 
 const router = express.Router();
+router.use(authenticateToken);
 
 router.get("/summary", (req, res) => {
   try {

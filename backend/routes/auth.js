@@ -1,5 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 const db = require("../database/db");
 
 const router = express.Router();
@@ -43,8 +45,22 @@ router.post("/login", (req, res) => {
       });
     }
 
+    const token = jwt.sign(
+      {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "2h",
+      }
+    );
+
     res.json({
       message: "Login successful",
+      token,
       user: {
         id: user.id,
         name: user.name,

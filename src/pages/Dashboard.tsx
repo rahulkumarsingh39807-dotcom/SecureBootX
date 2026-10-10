@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   Monitor,
   ShieldAlert,
@@ -64,17 +64,11 @@ function Dashboard() {
     const fetchDashboard = async () => {
       try {
         const [summaryResponse, alertsResponse, eventsResponse] =
-          await Promise.all([
-            axios.get(
-              "http://localhost:5000/api/dashboard/summary"
-            ),
-            axios.get(
-              "http://localhost:5000/api/alerts"
-            ),
-            axios.get(
-              "http://localhost:5000/api/security-events"
-            ),
-          ]);
+  await Promise.all([
+    api.get("/api/dashboard/summary"),
+    api.get("/api/alerts"),
+    api.get("/api/security-events"),
+  ]);
 
         setData(summaryResponse.data);
         setAlerts(alertsResponse.data.slice(0, 4));

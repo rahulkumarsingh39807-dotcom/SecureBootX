@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent, CSSProperties } from "react";
+import api from "../api";
 import {
   Search,
   RefreshCw,
@@ -7,6 +9,11 @@ import {
   ShieldCheck,
   UserCheck,
   UserX,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Save,
 } from "lucide-react";
 
 interface User {
@@ -18,48 +25,317 @@ interface User {
   created_at: string;
 }
 
-const API_URL = "http://localhost:5000/api/users";
+interface UserForm {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  status: string;
+}
+
+const API_URL = "/api/users";
+
+const emptyForm: UserForm = {
+  name: "",
+  email: "",
+  password: "",
+  role: "User",
+  status: "Active",
+};
+
+const styles: Record<string, CSSProperties> = {
+  page: {
+    padding: 24,
+    color: "#e5e7eb",
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+    minWidth: 0,
+  },
+  header: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+  },
+  heading: { margin: 0, fontSize: 28, fontWeight: 700, color: "#f9fafb" },
+  subtitle: { margin: "6px 0 0", color: "#9ca3af", fontSize: 14 },
+  buttonRow: { display: "flex", flexWrap: "wrap", gap: 10 },
+  button: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: "10px 15px",
+    borderRadius: 8,
+    border: "1px solid #374151",
+    background: "#111827",
+    color: "#e5e7eb",
+    cursor: "pointer",
+    fontSize: 14,
+  },
+  primaryButton: {
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "1px solid #2563eb",
+  },
+  dangerButton: {
+    background: "#7f1d1d",
+    color: "#fecaca",
+    border: "1px solid #991b1b",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: 16,
+  },
+  card: {
+    background: "#111827",
+    border: "1px solid #263244",
+    borderRadius: 12,
+    padding: 20,
+    minWidth: 0,
+  },
+  cardLabel: { color: "#9ca3af", fontSize: 14, margin: 0 },
+  cardValue: {
+    color: "#f9fafb",
+    fontSize: 30,
+    fontWeight: 700,
+    margin: "10px 0 0",
+  },
+  filters: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 12,
+    padding: 16,
+    background: "#111827",
+    border: "1px solid #263244",
+    borderRadius: 12,
+  },
+  input: {
+    boxSizing: "border-box",
+    width: "100%",
+    minWidth: 0,
+    padding: "11px 12px",
+    border: "1px solid #374151",
+    borderRadius: 8,
+    background: "#0b1220",
+    color: "#f9fafb",
+    outline: "none",
+    fontSize: 14,
+  },
+  searchInput: { flex: "1 1 220px" },
+  select: {
+    padding: "11px 12px",
+    border: "1px solid #374151",
+    borderRadius: 8,
+    background: "#0b1220",
+    color: "#e5e7eb",
+    fontSize: 14,
+  },
+  tablePanel: {
+    background: "#111827",
+    border: "1px solid #263244",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  tableHeader: {
+    padding: 20,
+    borderBottom: "1px solid #263244",
+    display: "flex",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  tableWrap: { width: "100%", overflowX: "auto" },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    textAlign: "left",
+    fontSize: 14,
+  },
+  th: {
+    padding: "13px 18px",
+    background: "#0b1220",
+    color: "#9ca3af",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    whiteSpace: "nowrap",
+  },
+  td: {
+    padding: "15px 18px",
+    borderTop: "1px solid #263244",
+    verticalAlign: "middle",
+  },
+  badge: {
+    display: "inline-block",
+    padding: "5px 9px",
+    borderRadius: 20,
+    fontSize: 12,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+  },
+  muted: { color: "#9ca3af", fontSize: 13 },
+  error: {
+    padding: 14,
+    background: "#35151b",
+    color: "#fecaca",
+    border: "1px solid #7f1d1d",
+    borderRadius: 8,
+  },
+  modalBackdrop: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 1000,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    background: "rgba(0,0,0,0.75)",
+    overflowY: "auto",
+  },
+  modal: {
+    width: "100%",
+    maxWidth: 520,
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#111827",
+    border: "1px solid #374151",
+    borderRadius: 14,
+    boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
+  },
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 20,
+    borderBottom: "1px solid #263244",
+  },
+  form: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
+  label: {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 600,
+    marginBottom: 7,
+    color: "#d1d5db",
+  },
+  iconButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+    border: "1px solid transparent",
+    borderRadius: 7,
+    background: "transparent",
+    color: "#cbd5e1",
+    cursor: "pointer",
+  },
+  empty: { padding: 40, textAlign: "center", color: "#9ca3af" },
+};
+
+function badgeStyle(value: string): CSSProperties {
+  if (value === "Administrator") {
+    return { ...styles.badge, background: "#3b1d5e", color: "#d8b4fe" };
+  }
+  if (value === "Security Analyst") {
+    return { ...styles.badge, background: "#172554", color: "#93c5fd" };
+  }
+  if (value === "Active") {
+    return { ...styles.badge, background: "#12372a", color: "#86efac" };
+  }
+  if (value === "Inactive") {
+    return { ...styles.badge, background: "#27272a", color: "#d4d4d8" };
+  }
+  return { ...styles.badge, background: "#1f2937", color: "#d1d5db" };
+}
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [form, setForm] = useState<UserForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  const fetchUsers = async () => {
+  const storedUser =
+    localStorage.getItem("securebootx_user") ||
+    sessionStorage.getItem("securebootx_user");
+
+  const currentUser = useMemo(() => {
     try {
-      setLoading(true);
-      setError("");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  }, [storedUser]);
 
-      const response = await axios.get<User[]>(API_URL);
+  const isAdministrator = currentUser?.role === "Administrator";
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      // api.ts supplies the backend base URL and JWT Authorization header.
+      const response = await api.get<User[]>(API_URL);
+
+      if (!Array.isArray(response.data)) {
+        throw new Error("Unexpected response from the users API.");
+      }
 
       setUsers(response.data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch users:", err);
 
-      setError(
-        "Unable to load users. Please make sure the SecureBootX backend is running."
-      );
+      if (api.isAxiosError(err)) {
+        const status = err.response?.status;
+        const message = err.response?.data?.message;
+
+        if (status === 401) {
+          setError("Authentication required. Please sign in again.");
+        } else if (status === 403) {
+          setError(message || "Access denied.");
+        } else if (status === 404) {
+          setError(
+            "Users API endpoint not found. Check backend/routes/users.js and server.js."
+          );
+        } else {
+          setError(
+            message ||
+              "Unable to load users. Check that the backend is running."
+          );
+        }
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load users."
+        );
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUsers();
   }, []);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const searchText = search.toLowerCase();
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
 
+  const filteredUsers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return users.filter((user) => {
       const matchesSearch =
-        user.name?.toLowerCase().includes(searchText) ||
-        user.email?.toLowerCase().includes(searchText) ||
-        user.role?.toLowerCase().includes(searchText);
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query) ||
+        user.role?.toLowerCase().includes(query);
 
       const matchesRole =
         roleFilter === "All" || user.role === roleFilter;
@@ -71,393 +347,641 @@ export default function Users() {
     });
   }, [users, search, roleFilter, statusFilter]);
 
-  const totalUsers = users.length;
-
-  const activeUsers = users.filter(
-    (user) => user.status === "Active"
-  ).length;
-
-  const inactiveUsers = users.filter(
-    (user) => user.status === "Inactive"
-  ).length;
-
+  const activeUsers = users.filter((user) => user.status === "Active").length;
+  const inactiveUsers = users.filter((user) => user.status === "Inactive").length;
   const administrators = users.filter(
     (user) => user.role === "Administrator"
   ).length;
 
-  const getRoleClass = (role: string) => {
-    switch (role) {
-      case "Administrator":
-        return "bg-purple-100 text-purple-700";
+  function openAddModal() {
+    if (!isAdministrator) return;
+    setEditingUser(null);
+    setForm(emptyForm);
+    setFormError("");
+    setShowModal(true);
+  }
 
-      case "Security Analyst":
-        return "bg-blue-100 text-blue-700";
+  function openEditModal(user: User) {
+    if (!isAdministrator) return;
+    setEditingUser(user);
+    setForm({
+      name: user.name,
+      email: user.email,
+      password: "",
+      role: user.role,
+      status: user.status,
+    });
+    setFormError("");
+    setShowModal(true);
+  }
 
-      case "User":
-        return "bg-gray-100 text-gray-700";
+  function closeModal() {
+    if (saving) return;
+    setShowModal(false);
+    setEditingUser(null);
+    setForm(emptyForm);
+    setFormError("");
+  }
 
-      default:
-        return "bg-gray-100 text-gray-700";
+  async function handleSaveUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!isAdministrator) {
+      setFormError("Only administrators can manage users.");
+      return;
     }
-  };
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-700";
-
-      case "Inactive":
-        return "bg-gray-100 text-gray-600";
-
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Unknown";
-
-    const date = new Date(dateString);
-
-    if (Number.isNaN(date.getTime())) {
-      return dateString;
+    if (!form.name.trim() || !form.email.trim()) {
+      setFormError("Name and email are required.");
+      return;
     }
 
-    return date.toLocaleString();
-  };
+    if (!editingUser && !form.password) {
+      setFormError("Password is required for a new user.");
+      return;
+    }
+
+    if (form.password && form.password.length < 8) {
+      setFormError("Password must contain at least 8 characters.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+
+    try {
+      const payload: UserForm = {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+      };
+
+      if (editingUser) {
+        await api.put(`${API_URL}/${editingUser.id}`, payload);
+      } else {
+        await api.post(API_URL, payload);
+      }
+
+      setShowModal(false);
+      setEditingUser(null);
+      setForm(emptyForm);
+      await fetchUsers();
+    } catch (err: unknown) {
+      console.error("Failed to save user:", err);
+
+      if (api.isAxiosError(err)) {
+        setFormError(
+          err.response?.data?.message ||
+            "Unable to save user. Check the backend and try again."
+        );
+      } else {
+        setFormError("An unexpected error occurred.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteUser(user: User) {
+    if (!isAdministrator) return;
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${user.name}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.delete(`${API_URL}/${user.id}`);
+      await fetchUsers();
+    } catch (err: unknown) {
+      console.error("Failed to delete user:", err);
+      window.alert(
+        api.isAxiosError(err)
+          ? err.response?.data?.message || "Unable to delete user."
+          : "An unexpected error occurred."
+      );
+    }
+  }
+
+  async function handleToggleStatus(user: User) {
+    if (!isAdministrator) return;
+
+    const newStatus = user.status === "Active" ? "Inactive" : "Active";
+
+    if (
+      !window.confirm(
+        `Are you sure you want to ${newStatus.toLowerCase()} "${user.name}"?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.patch(`${API_URL}/${user.id}/status`, {
+        status: newStatus,
+      });
+      await fetchUsers();
+    } catch (err: unknown) {
+      console.error("Failed to update user status:", err);
+      window.alert(
+        api.isAxiosError(err)
+          ? err.response?.data?.message || "Unable to update user status."
+          : "An unexpected error occurred."
+      );
+    }
+  }
+
+  function formatDate(value: string) {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value
+      : date.toLocaleDateString();
+  }
 
   return (
-    <div className="p-6 space-y-6">
-
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div style={styles.page}>
+      <header style={styles.header}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Users
-          </h1>
-
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 style={styles.heading}>Users</h1>
+          <p style={styles.subtitle}>
             Manage SecureBootX users and access roles
           </p>
         </div>
 
-        <button
-          onClick={fetchUsers}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          <RefreshCw
-            size={17}
-            className={loading ? "animate-spin" : ""}
-          />
-
-          Refresh
-        </button>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">
-                Total Users
-              </p>
-
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {totalUsers}
-              </p>
-            </div>
-
-            <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-              <UsersIcon size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">
-                Active Users
-              </p>
-
-              <p className="text-3xl font-bold text-green-600 mt-2">
-                {activeUsers}
-              </p>
-            </div>
-
-            <div className="p-3 bg-green-100 text-green-600 rounded-lg">
-              <UserCheck size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">
-                Inactive Users
-              </p>
-
-              <p className="text-3xl font-bold text-gray-600 mt-2">
-                {inactiveUsers}
-              </p>
-            </div>
-
-            <div className="p-3 bg-gray-100 text-gray-600 rounded-lg">
-              <UserX size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">
-                Administrators
-              </p>
-
-              <p className="text-3xl font-bold text-purple-600 mt-2">
-                {administrators}
-              </p>
-            </div>
-
-            <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
-              <ShieldCheck size={24} />
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Search + Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-
-        <div className="flex flex-col md:flex-row gap-4">
-
-          <div className="relative flex-1">
-
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Search users, email, role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            />
-
-          </div>
-
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Roles</option>
-            <option value="Administrator">Administrator</option>
-            <option value="Security Analyst">Security Analyst</option>
-            <option value="User">User</option>
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="All">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-
-        </div>
-
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
-
-          <p className="font-medium">
-            {error}
-          </p>
-
+        <div style={styles.buttonRow}>
           <button
-            onClick={fetchUsers}
-            className="mt-2 text-sm underline"
+            type="button"
+            style={styles.button}
+            onClick={() => void fetchUsers()}
+            disabled={loading}
+          >
+            <RefreshCw size={16} />
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+
+          {isAdministrator && (
+            <button
+              type="button"
+              style={{ ...styles.button, ...styles.primaryButton }}
+              onClick={openAddModal}
+            >
+              <Plus size={17} />
+              Add User
+            </button>
+          )}
+        </div>
+      </header>
+
+      <section style={styles.grid}>
+        <StatCard
+          label="Total Users"
+          value={users.length}
+          icon={<UsersIcon size={23} />}
+          color="#60a5fa"
+        />
+        <StatCard
+          label="Active Users"
+          value={activeUsers}
+          icon={<UserCheck size={23} />}
+          color="#4ade80"
+        />
+        <StatCard
+          label="Inactive Users"
+          value={inactiveUsers}
+          icon={<UserX size={23} />}
+          color="#9ca3af"
+        />
+        <StatCard
+          label="Administrators"
+          value={administrators}
+          icon={<ShieldCheck size={23} />}
+          color="#c084fc"
+        />
+      </section>
+
+      <section style={styles.filters}>
+        <div style={{ ...styles.searchInput, position: "relative" }}>
+          <Search
+            size={17}
+            style={{
+              position: "absolute",
+              left: 12,
+              top: 12,
+              color: "#9ca3af",
+            }}
+          />
+          <input
+            style={{ ...styles.input, paddingLeft: 38 }}
+            type="search"
+            placeholder="Search users, email, role..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+
+        <select
+          aria-label="Filter by role"
+          style={styles.select}
+          value={roleFilter}
+          onChange={(event) => setRoleFilter(event.target.value)}
+        >
+          <option value="All">All Roles</option>
+          <option value="Administrator">Administrator</option>
+          <option value="Security Analyst">Security Analyst</option>
+          <option value="User">User</option>
+        </select>
+
+        <select
+          aria-label="Filter by status"
+          style={styles.select}
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="All">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </section>
+
+      {error && (
+        <div style={styles.error} role="alert">
+          <p style={{ margin: 0 }}>{error}</p>
+          <button
+            type="button"
+            style={{
+              ...styles.button,
+              marginTop: 12,
+              background: "transparent",
+            }}
+            onClick={() => void fetchUsers()}
           >
             Try again
           </button>
-
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center shadow-sm">
-
-          <RefreshCw
-            size={30}
-            className="mx-auto animate-spin text-blue-600"
-          />
-
-          <p className="mt-3 text-gray-500">
-            Loading users from SecureBootX API...
-          </p>
-
-        </div>
-      )}
-
-      {/* Users Table */}
-      {!loading && !error && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-
-          <div className="px-6 py-4 border-b border-gray-200">
-
-            <h2 className="font-semibold text-gray-900">
+      <section style={styles.tablePanel}>
+        <div style={styles.tableHeader}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 17, color: "#f9fafb" }}>
               User Management
             </h2>
-
-            <p className="text-sm text-gray-500 mt-1">
+            <p style={{ ...styles.subtitle, marginTop: 6 }}>
               Showing {filteredUsers.length} of {users.length} users
             </p>
-
           </div>
+        </div>
 
-          {filteredUsers.length === 0 ? (
-
-            <div className="p-10 text-center">
-
-              <UsersIcon
-                size={40}
-                className="mx-auto text-gray-300"
-              />
-
-              <p className="mt-3 text-gray-500">
-                No users found.
-              </p>
-
-            </div>
-
-          ) : (
-
-            <div className="overflow-x-auto">
-
-              <table className="w-full">
-
-                <thead>
-
-                  <tr className="bg-gray-50 border-b border-gray-200">
-
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
-                      User
+        {loading ? (
+          <div style={styles.empty}>
+            <RefreshCw
+              size={26}
+              style={{ animation: "spin 1s linear infinite" }}
+            />
+            <p>Loading users from SecureBootX API...</p>
+          </div>
+        ) : error ? (
+          <div style={styles.empty}>
+            User data could not be loaded. Resolve the API error above.
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div style={styles.empty}>
+            <UsersIcon size={36} />
+            <p>No users found.</p>
+          </div>
+        ) : (
+          <div style={styles.tableWrap}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>User</th>
+                  <th style={styles.th}>Email</th>
+                  <th style={styles.th}>Role</th>
+                  <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Created</th>
+                  {isAdministrator && (
+                    <th style={{ ...styles.th, textAlign: "right" }}>
+                      Actions
                     </th>
+                  )}
+                </tr>
+              </thead>
 
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
-                      Email
-                    </th>
-
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
-                      Role
-                    </th>
-
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
-                      Status
-                    </th>
-
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">
-                      Created
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-                <tbody className="divide-y divide-gray-100">
-
-                  {filteredUsers.map((user) => (
-
-                    <tr
-                      key={user.id}
-                      className="hover:bg-gray-50 transition"
-                    >
-
-                      <td className="px-6 py-4">
-
-                        <div className="flex items-center gap-3">
-
-                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                            <UsersIcon size={20} />
-                          </div>
-
-                          <p className="font-medium text-gray-900">
-                            {user.name}
-                          </p>
-
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td style={styles.td}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          minWidth: 150,
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: 8,
+                            background: "#172554",
+                            color: "#93c5fd",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <UsersIcon size={18} />
                         </div>
-
-                      </td>
-
-                      <td className="px-6 py-4">
-
-                        <p className="text-sm text-gray-700">
-                          {user.email}
-                        </p>
-
-                      </td>
-
-                      <td className="px-6 py-4">
-
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRoleClass(
-                            user.role
-                          )}`}
-                        >
-                          {user.role}
+                        <span style={{ fontWeight: 600, color: "#f3f4f6" }}>
+                          {user.name}
                         </span>
+                      </div>
+                    </td>
 
-                      </td>
+                    <td style={styles.td}>{user.email}</td>
 
-                      <td className="px-6 py-4">
+                    <td style={styles.td}>
+                      <span style={badgeStyle(user.role)}>{user.role}</span>
+                    </td>
 
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusClass(
-                            user.status
-                          )}`}
+                    <td style={styles.td}>
+                      <span style={badgeStyle(user.status)}>
+                        {user.status}
+                      </span>
+                    </td>
+
+                    <td style={{ ...styles.td, whiteSpace: "nowrap" }}>
+                      {formatDate(user.created_at)}
+                    </td>
+
+                    {isAdministrator && (
+                      <td style={styles.td}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 4,
+                          }}
                         >
-                          {user.status}
-                        </span>
+                          <button
+                            type="button"
+                            style={styles.iconButton}
+                            title="Edit user"
+                            aria-label={`Edit ${user.name}`}
+                            onClick={() => openEditModal(user)}
+                          >
+                            <Pencil size={17} />
+                          </button>
 
+                          <button
+                            type="button"
+                            style={styles.iconButton}
+                            title={
+                              user.status === "Active"
+                                ? "Deactivate user"
+                                : "Activate user"
+                            }
+                            aria-label={`Change status for ${user.name}`}
+                            onClick={() => void handleToggleStatus(user)}
+                          >
+                            {user.status === "Active" ? (
+                              <UserX size={17} />
+                            ) : (
+                              <UserCheck size={17} />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            style={{
+                              ...styles.iconButton,
+                              color: "#f87171",
+                            }}
+                            title="Delete user"
+                            aria-label={`Delete ${user.name}`}
+                            onClick={() => void handleDeleteUser(user)}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
                       </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-                      <td className="px-6 py-4">
+      {showModal && isAdministrator && (
+        <div
+          style={styles.modalBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-modal-title"
+            style={styles.modal}
+          >
+            <header style={styles.modalHeader}>
+              <div>
+                <h2
+                  id="user-modal-title"
+                  style={{ margin: 0, fontSize: 19, color: "#f9fafb" }}
+                >
+                  {editingUser ? "Edit User" : "Add User"}
+                </h2>
+                <p style={styles.subtitle}>
+                  {editingUser
+                    ? "Update user information and access."
+                    : "Create a new SecureBootX user."}
+                </p>
+              </div>
 
-                        <p className="text-sm text-gray-600">
-                          {formatDate(user.created_at)}
-                        </p>
+              <button
+                type="button"
+                style={styles.iconButton}
+                onClick={closeModal}
+                disabled={saving}
+                aria-label="Close dialog"
+              >
+                <X size={20} />
+              </button>
+            </header>
 
-                      </td>
+            <form style={styles.form} onSubmit={handleSaveUser}>
+              {formError && (
+                <div style={styles.error} role="alert">
+                  {formError}
+                </div>
+              )}
 
-                    </tr>
+              <FormField label="Full Name">
+                <input
+                  style={styles.input}
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm({ ...form, name: event.target.value })
+                  }
+                  placeholder="Enter full name"
+                  autoComplete="name"
+                  required
+                />
+              </FormField>
 
-                  ))}
+              <FormField label="Email">
+                <input
+                  style={styles.input}
+                  type="email"
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm({ ...form, email: event.target.value })
+                  }
+                  placeholder="user@example.com"
+                  autoComplete="email"
+                  required
+                />
+              </FormField>
 
-                </tbody>
+              <FormField label={editingUser ? "New Password (optional)" : "Password"}>
+                <input
+                  style={styles.input}
+                  type="password"
+                  value={form.password}
+                  onChange={(event) =>
+                    setForm({ ...form, password: event.target.value })
+                  }
+                  placeholder={
+                    editingUser
+                      ? "Leave blank to keep current password"
+                      : "At least 8 characters"
+                  }
+                  autoComplete="new-password"
+                  minLength={8}
+                  required={!editingUser}
+                />
+              </FormField>
 
-              </table>
+              <FormField label="Role">
+                <select
+                  style={styles.input}
+                  value={form.role}
+                  onChange={(event) =>
+                    setForm({ ...form, role: event.target.value })
+                  }
+                >
+                  <option value="User">User</option>
+                  <option value="Security Analyst">Security Analyst</option>
+                  <option value="Administrator">Administrator</option>
+                </select>
+              </FormField>
 
-            </div>
+              <FormField label="Status">
+                <select
+                  style={styles.input}
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm({ ...form, status: event.target.value })
+                  }
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </FormField>
 
-          )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  paddingTop: 12,
+                  borderTop: "1px solid #263244",
+                }}
+              >
+                <button
+                  type="button"
+                  style={styles.button}
+                  onClick={closeModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
 
+                <button
+                  type="submit"
+                  style={{ ...styles.button, ...styles.primaryButton }}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw size={16} />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      {editingUser ? "Update User" : "Create User"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </section>
         </div>
       )}
+    </div>
+  );
+}
 
+function StatCard({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  return (
+    <div style={styles.card}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div>
+          <p style={styles.cardLabel}>{label}</p>
+          <p style={styles.cardValue}>{value}</p>
+        </div>
+        <div style={{ color, padding: 12, background: "#1f2937", borderRadius: 10 }}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label style={styles.label}>{label}</label>
+      {children}
     </div>
   );
 }

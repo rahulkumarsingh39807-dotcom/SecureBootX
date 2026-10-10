@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   Search,
   RefreshCw,
@@ -19,7 +19,7 @@ interface Threat {
   detected_at: string;
 }
 
-const API_URL = "http://localhost:5000/api/threats";
+const API_URL = "/threats";
 
 export default function Threats() {
   const [threats, setThreats] = useState<Threat[]>([]);
@@ -34,7 +34,7 @@ export default function Threats() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get<Threat[]>(API_URL);
+      const response = await api.get<Threat[]>(API_URL);
 
       setThreats(response.data);
     } catch (err) {

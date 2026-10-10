@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   Search,
   RefreshCw,
@@ -36,7 +36,7 @@ export default function Alerts() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get<Alert[]>(API_URL);
+      const response = await api.get<Alert[]>(API_URL);
 
       setAlerts(response.data);
     } catch (err) {
