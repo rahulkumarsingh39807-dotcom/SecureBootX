@@ -1,27 +1,33 @@
-const authenticateToken = require("../middleware/auth");
+
 const express = require("express");
 const db = require("../database/db");
+const authenticateToken = require("../middleware/auth");
 
 const router = express.Router();
+
+// Require authentication for all vulnerability routes
 router.use(authenticateToken);
 
+// GET /api/vulnerabilities
+// Fetch all vulnerabilities
 router.get("/", (req, res) => {
   try {
     const vulnerabilities = db
-      .prepare(
-        "SELECT * FROM vulnerabilities ORDER BY id DESC"
-      )
+      .prepare("SELECT * FROM vulnerabilities ORDER BY id DESC")
       .all();
 
-    res.json(vulnerabilities);
+    return res.status(200).json(vulnerabilities);
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch vulnerabilities",
-      error: error.message,
+    console.error("Get vulnerabilities error:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch vulnerabilities.",
     });
   }
 });
 
+// GET /api/vulnerabilities/:id
+// Fetch one vulnerability by vulnerability_id
 router.get("/:id", (req, res) => {
   try {
     const vulnerability = db
@@ -32,15 +38,16 @@ router.get("/:id", (req, res) => {
 
     if (!vulnerability) {
       return res.status(404).json({
-        message: "Vulnerability not found",
+        message: "Vulnerability not found.",
       });
     }
 
-    res.json(vulnerability);
+    return res.status(200).json(vulnerability);
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch vulnerability",
-      error: error.message,
+    console.error("Get vulnerability error:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch vulnerability.",
     });
   }
 });

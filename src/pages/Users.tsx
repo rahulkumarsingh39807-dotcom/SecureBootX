@@ -980,8 +980,8 @@ function FormField({
 }) {
   return (
     <div>
-      <label style={styles.label}>{label}</label>
       {children}
     </div>
   );
 }
+

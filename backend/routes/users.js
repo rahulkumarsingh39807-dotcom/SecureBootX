@@ -2,8 +2,13 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const db = require("../database/db");
+const authenticateToken = require("../middleware/auth");
+const authorizeRole = require("../middleware/authorizeRole");
 
 const router = express.Router();
+
+// Require a valid JWT for every endpoint in this router.
+router.use(authenticateToken);
 
 const VALID_ROLES = [
   "User",
@@ -13,7 +18,7 @@ const VALID_ROLES = [
 
 const VALID_STATUSES = ["Active", "Inactive"];
 
-// Normalize and validate email addresses.
+// Normalize email addresses.
 function normalizeEmail(email) {
   return typeof email === "string"
     ? email.trim().toLowerCase()
@@ -81,9 +86,14 @@ router.get("/:id", (req, res) => {
 });
 
 // POST /api/users - Create a user
-router.post("/", (req, res) => {
-  const { name, password, role = "User", status = "Active" } =
-    req.body;
+// Administrator only
+router.post("/", authorizeRole("Administrator"), (req, res) => {
+  const {
+    name,
+    password,
+    role = "User",
+    status = "Active",
+  } = req.body;
 
   const email = normalizeEmail(req.body.email);
 
@@ -172,7 +182,8 @@ router.post("/", (req, res) => {
 });
 
 // PUT /api/users/:id - Update a user
-router.put("/:id", (req, res) => {
+// Administrator only
+router.put("/:id", authorizeRole("Administrator"), (req, res) => {
   const { name, password, role, status } = req.body;
   const email = normalizeEmail(req.body.email);
 
@@ -280,65 +291,76 @@ router.put("/:id", (req, res) => {
 });
 
 // PATCH /api/users/:id/status - Change user status
-router.patch("/:id/status", (req, res) => {
-  const { status } = req.body;
+// Administrator only
+router.patch(
+  "/:id/status",
+  authorizeRole("Administrator"),
+  (req, res) => {
+    const { status } = req.body;
 
-  if (!VALID_STATUSES.includes(status)) {
-    return res.status(400).json({
-      message: "Status must be Active or Inactive.",
-    });
-  }
-
-  try {
-    const result = db
-      .prepare(`
-        UPDATE users
-        SET status = ?
-        WHERE id = ?
-      `)
-      .run(status, req.params.id);
-
-    if (result.changes === 0) {
-      return res.status(404).json({
-        message: "User not found.",
+    if (!VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: "Status must be Active or Inactive.",
       });
     }
 
-    return res.json({
-      message: `User ${status.toLowerCase()} successfully.`,
-    });
-  } catch (error) {
-    console.error("Update user status error:", error);
+    try {
+      const result = db
+        .prepare(`
+          UPDATE users
+          SET status = ?
+          WHERE id = ?
+        `)
+        .run(status, req.params.id);
 
-    return res.status(500).json({
-      message: "Failed to update user status.",
-    });
+      if (result.changes === 0) {
+        return res.status(404).json({
+          message: "User not found.",
+        });
+      }
+
+      return res.json({
+        message: `User ${status.toLowerCase()} successfully.`,
+      });
+    } catch (error) {
+      console.error("Update user status error:", error);
+
+      return res.status(500).json({
+        message: "Failed to update user status.",
+      });
+    }
   }
-});
+);
 
 // DELETE /api/users/:id - Delete a user
-router.delete("/:id", (req, res) => {
-  try {
-    const result = db
-      .prepare("DELETE FROM users WHERE id = ?")
-      .run(req.params.id);
+// Administrator only
+router.delete(
+  "/:id",
+  authorizeRole("Administrator"),
+  (req, res) => {
+    try {
+      const result = db
+        .prepare("DELETE FROM users WHERE id = ?")
+        .run(req.params.id);
 
-    if (result.changes === 0) {
-      return res.status(404).json({
-        message: "User not found.",
+      if (result.changes === 0) {
+        return res.status(404).json({
+          message: "User not found.",
+        });
+      }
+
+      return res.json({
+        message: "User deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Delete user error:", error);
+
+      return res.status(500).json({
+        message: "Failed to delete user.",
       });
     }
-
-    return res.json({
-      message: "User deleted successfully.",
-    });
-  } catch (error) {
-    console.error("Delete user error:", error);
-
-    return res.status(500).json({
-      message: "Failed to delete user.",
-    });
   }
-});
+);
 
 module.exports = router;
+

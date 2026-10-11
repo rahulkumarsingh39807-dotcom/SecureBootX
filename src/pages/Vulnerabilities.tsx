@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import {
   Search,
   RefreshCw,
@@ -41,7 +41,7 @@ export default function Vulnerabilities() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get<Vulnerability[]>(API_URL);
+      const response = await api.get<Vulnerability[]>(API_URL);
 
       setVulnerabilities(response.data);
     } catch (err) {

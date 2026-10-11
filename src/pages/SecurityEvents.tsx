@@ -29,10 +29,7 @@ function SecurityEvents() {
       setLoading(true);
       setError("");
 
-      const response = await api.get<SecurityEvent[]>(
-        "/security-events"
-      );
-
+     const response = await api.get("/api/security-events");
       setEvents(response.data);
     } catch (err) {
       console.error(err);

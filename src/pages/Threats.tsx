@@ -19,7 +19,7 @@ interface Threat {
   detected_at: string;
 }
 
-const API_URL = "/threats";
+const API_URL = "/api/threats";
 
 export default function Threats() {
   const [threats, setThreats] = useState<Threat[]>([]);
