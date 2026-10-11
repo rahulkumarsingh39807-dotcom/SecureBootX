@@ -1,26 +1,44 @@
+
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 const db = require("../database/db");
 
 const router = express.Router();
 
-router.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      message: "Email and password are required.",
-    });
-  }
-
+// POST /api/auth/login
+router.post("/login", async (req, res) => {
   try {
+    const { email, password } = req.body || {};
+
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Email and password are required.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured.");
+
+      return res.status(500).json({
+        message: "Authentication is temporarily unavailable.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     const user = db
       .prepare(
-        "SELECT * FROM auth_users WHERE email = ?"
+        `SELECT id, name, email, role, status, password_hash
+         FROM auth_users
+         WHERE email = ?`
       )
-      .get(email.toLowerCase().trim());
+      .get(normalizedEmail);
 
     if (!user) {
       return res.status(401).json({
@@ -34,7 +52,7 @@ router.post("/login", (req, res) => {
       });
     }
 
-    const passwordValid = bcrypt.compareSync(
+    const passwordValid = await bcrypt.compare(
       password,
       user.password_hash
     );
@@ -58,8 +76,8 @@ router.post("/login", (req, res) => {
       }
     );
 
-    res.json({
-      message: "Login successful",
+    return res.status(200).json({
+      message: "Login successful.",
       token,
       user: {
         id: user.id,
@@ -71,9 +89,8 @@ router.post("/login", (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
 
-    res.status(500).json({
-      message: "Login failed.",
-      error: error.message,
+    return res.status(500).json({
+      message: "Login failed due to a server error.",
     });
   }
 });
